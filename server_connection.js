@@ -1,3 +1,9 @@
+const state = {
+    // server_domain: "http://localhost:3000",
+    server_domain: "https://tastetreasures.cs.bgu.ac.il"
+}
+
+
 var path = require("path");
 var app = require('./main');
 var https = require('https');
