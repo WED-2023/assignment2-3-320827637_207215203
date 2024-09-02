@@ -5,24 +5,30 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const config = {
-  host: process.env.host, // "localhost"
-  user: process.env.user, // "root"
-  password: process.env.password,
-  database: process.env.database,
+  host: "localhost", // "localhost"
+  user: "root", // "root"
+  password: "11111111",
+  database: "mydb",
 };
 
-console.log(process.env.host)
-console.log(process.env.user)
-console.log(process.env.password)
-console.log(process.env.database)
+console.log(config.host);
+console.log(config.user);
+console.log(config.password);
+console.log(config.database);
 
 const pool = mysql.createPool(config);
 
 const connection = () => {
   return new Promise((resolve, reject) => {
     pool.getConnection((err, connection) => {
-      if (err) reject(err);
-      console.log("MySQL pool connected: threadId " + connection.threadId);
+      if (err) {
+        console.error("Error connecting to MySQL:", err);
+        reject(err);
+        // return;
+      }
+      if (connection) {
+        console.log("MySQL pool connected: threadId " + connection.threadId);
+      }
       const query = (sql, binding) => {
         return new Promise((resolve, reject) => {
           connection.query(sql, binding, (err, result) => {

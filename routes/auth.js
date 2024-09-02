@@ -30,12 +30,30 @@ router.post("/Register", async (req, res, next) => {
       parseInt(process.env.bcrypt_saltRounds)
     );
     await DButils.execQuery(
-      `INSERT INTO users VALUES ('${user_details.username}', '${user_details.firstname}', '${user_details.lastname}',
-      '${user_details.country}', '${hash_password}', '${user_details.email}')`
+      `INSERT INTO users VALUES (default,'${user_details.username}', '${user_details.firstname}', '${user_details.lastname}',
+      '${user_details.country}', '${hash_password}', '${user_details.email}','${user_details.profilePic}')`
     );
+
+    DButils.execQuery("SELECT username from users");
     res.status(201).send({ message: "user created", success: true });
   } catch (error) {
     next(error);
+  }
+});
+
+
+//checks that the username already exists in the system
+router.get('/Register', async (req, res, next) => {
+  let exists = false;
+  try {
+    const users = await DButils.execQuery("SELECT username from users");
+    if (users.find((x) => x.username === req.query.username)) {
+      exists = true;
+    }
+    res.status(200).send({ exists: exists });
+  } catch (error) {
+    res.status(200).send({ exists: exists });
+    console.log(error);
   }
 });
 
