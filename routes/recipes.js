@@ -20,23 +20,12 @@ router.get("/search", async (req, res, next) => {
     next(error);
   }
 });
-/**
- * This path returns a full details of a recipe by its id
- */
-router.get("/:recipeId", async (req, res, next) => {
-  try {
-    const recipe = await recipes_utils.getRecipeDetails(req.params.recipeId);
-    res.send(recipe);
-  } catch (error) {
-    next(error);
-  }
-});
 
 
 /**
  * This path returns 3 random recipes for the main page
  */
-router.get("/randon_recipes", async (req, res, next) => {
+router.get("/randomRecipes", async (req, res, next) => {
   try {
     const result = await recipes_utils.getRandomRecipes();
     res.status(200).send({ recipes: result });
@@ -45,6 +34,17 @@ router.get("/randon_recipes", async (req, res, next) => {
   }
 });
 
+/**
+ * This path returns a full details of a recipe by its id
+ */
+router.get("/recipe/:recipeId", async (req, res, next) => {
+  try {
+    const recipe = await recipes_utils.getRecipeInformation(req.params.recipeId);
+    res.send(recipe);
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
 
