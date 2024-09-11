@@ -1,7 +1,9 @@
 const axios = require("axios");
 require("dotenv").config();
 const api_domain = "https://api.spoonacular.com/recipes";
-const apiKey = process.env.SPOONACULAR_API_KEY; // Ensure this variable is correctly set in your .env file
+// const apiKey = process.env.SPOONACULAR_API_KEY; // Ensure this variable is correctly set in your .env file
+
+const apiKey = "eee0057bb4964d09b8734fd44f51ad7f"
 
 // Function to fetch detailed information about a specific recipe
 async function getRecipeInformation(recipe_id) {

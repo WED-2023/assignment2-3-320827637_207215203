@@ -9,7 +9,7 @@ const recipe_utils = require("./utils/recipes_utils");
  */
 router.use(async function (req, res, next) {
   if (req.session && req.session.user_id) {
-    DButils.execQuery("SELECT user_id FROM users").then((users) => {
+    DButils.execQuery("SELECT id FROM users").then((users) => {
       if (users.find((x) => x.user_id === req.session.user_id)) {
         req.user_id = req.session.user_id;
         next();
@@ -89,7 +89,8 @@ router.get('/getRecentWatched', async (req, res, next) => {
 /**
  * This path adds a personal recipe of the logge in user to the database
  */
-router.post('/createPersonalRecipe', async (req, res, next) => {
+router.post('/createRecipe', async (req, res, next) => {
+  console.log('POST /createRecipe hit'); // Add this line
   try {
     const user_id = req.session.user_id;
     const vegan = req.body.vegan ? 1 : 0;
@@ -110,9 +111,12 @@ router.post('/createPersonalRecipe', async (req, res, next) => {
       instructions: req.body.instructions
     };
 
+    console.log('Recipe details:', recipe_details); // Add this line
+
     await user_utils.addPersonalRecipes(recipe_details);
     res.status(201).send("Personal recipe added successfully");
   } catch (error) {
+    console.error('Error in POST /createRecipe:', error); // Add this line
     next(error);
   }
 });

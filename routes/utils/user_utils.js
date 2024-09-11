@@ -126,30 +126,29 @@ async function getRecentWatchedRecipes(user_id) {
  */
 async function addPersonalRecipes(recipe_details) {
     try {
-        // Insert the recipe details into the recipes table
-        await DButils.execQuery(`
-            INSERT INTO recipes (
-                user_id, title, readyInMinutes, image, servings, popularity, vegan, vegetarian, glutenFree, extendedIngredients, instructions
-            ) VALUES (
-                '${recipe_details.user_id}', '${recipe_details.title}', '${recipe_details.readyInMinutes}', '${recipe_details.image}', 
-                '${recipe_details.servings}', '${recipe_details.popularity}', '${recipe_details.vegan}', '${recipe_details.vegetarian}', 
-                '${recipe_details.glutenFree}', '${recipe_details.extendedIngredients}', '${recipe_details.instructions}'
-            )
-        `);
-
-        // Get the ID of the newly inserted recipe
-        const maxRecipeIdResult = await DButils.execQuery('SELECT MAX(recipe_id) AS max_recipe_id FROM recipes;');
-        const maxRecipeId = maxRecipeIdResult[0].max_recipe_id;
-
-        // Insert the recipe ID and user ID into the mypersonalrecipes table
-        await DButils.execQuery(`
-            INSERT INTO mypersonalrecipes (recipe_id, user_id) VALUES ('${maxRecipeId}', '${recipe_details.user_id}')
-        `);
+      console.log('Inserting recipe into database:', recipe_details); // Add this line
+      await DButils.execQuery(
+        `INSERT INTO personal_recipes (user_id, title, readyInMinutes, image, servings, popularity, vegan, vegetarian, glutenFree, extendedIngredients, instructions)
+        VALUES (
+          '${recipe_details.user_id}',
+          '${recipe_details.title}',
+          '${recipe_details.readyInMinutes}',
+          '${recipe_details.image}',
+          '${recipe_details.servings}',
+          '${recipe_details.popularity}',
+          '${recipe_details.vegan}',
+          '${recipe_details.vegetarian}',
+          '${recipe_details.glutenFree}',
+          '${recipe_details.extendedIngredients}',
+          '${recipe_details.instructions}'
+        )`
+      );
+      console.log('Recipe inserted successfully'); // Add this line
     } catch (error) {
-        console.error(error);
-        throw new Error('Failed to add personal recipe');
+      console.error('Error inserting recipe into database:', error); // Add this line
+      throw error;
     }
-}
+  }
 
 
 /**
