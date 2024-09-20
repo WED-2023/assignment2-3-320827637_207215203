@@ -1,10 +1,9 @@
 const axios = require("axios");
 require("dotenv").config();
 const api_domain = "https://api.spoonacular.com/recipes";
-// const apiKey = process.env.SPOONACULAR_API_KEY; // Ensure this variable is correctly set in your .env file
-
-const apiKey = "eee0057bb4964d09b8734fd44f51ad7f"
-
+const apiKey = process.env.spooncular_apiKey; // Ensure this variable is correctly set in your .env file
+// const db = require('db.js');
+const DButils = require('./DButils'); // Adjust the path as necessary
 // Function to fetch detailed information about a specific recipe
 async function getRecipeInformation(recipe_id) {
     try {
@@ -57,6 +56,7 @@ async function getRandomRecipes(number = 4) {
 // Function to search for recipes based on various parameters
 async function searchRecipe(queryParams) {
     try {
+        console.log("paramsssssss=",queryParams)
         const response = await axios.get(`${api_domain}/complexSearch`, {
             params: {
                 ...queryParams,
@@ -76,13 +76,33 @@ async function searchRecipe(queryParams) {
     }
 }
 
-// Optional: Add more functions if necessary, such as fetching recipes by image, etc.
+
+async function getRecipeById(recipe_id) {
+    try {
+        const response = await axios.get(`${api_domain}/${recipe_id}/information`, {
+            params: {
+                apiKey: apiKey
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching recipe with ID ${recipe_id}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
+}
+
+async function getFamilyRecipes() {
+    const familyRecipes = await DButils.execQuery("SELECT * FROM familyrecipes");
+    return familyRecipes;
+}
 
 module.exports = {
     getRecipeInformation,
     getRecipesPreview,
     getRandomRecipes,
-    searchRecipe
+    searchRecipe,
+    getRecipeById,
+    getFamilyRecipes
 };
 
 

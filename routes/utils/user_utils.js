@@ -1,13 +1,17 @@
 const DButils = require("./DButils");
+const axios = require("axios");
+require("dotenv").config();
+const api_domain = "https://api.spoonacular.com/recipes";
+const apiKey = process.env.SPOONACULAR_API_KEY; // Ensure this variable is correctly set in your .env file
 
 async function markAsFavorite(user_id, recipe_id){
     await DButils.execQuery(`insert into FavoriteRecipes values ('${user_id}',${recipe_id})`);
 }
 
-async function getFavoriteRecipes(user_id){
-    const recipes_id = await DButils.execQuery(`select recipe_id from FavoriteRecipes where user_id='${user_id}'`);
-    return recipes_id;
-}
+// async function getFavoriteRecipes(user_id){
+//     const recipes_id = await DButils.execQuery(`select recipe_id from FavoriteRecipes where user_id='${user_id}'`);
+//     return recipes_id;
+// }
 
 /**
  * Adds a record to the WatchedRecipes table with the user_id and recipe_id.
@@ -124,31 +128,48 @@ async function getRecentWatchedRecipes(user_id) {
  * @param {string} recipe_details.instructions - The instructions for the recipe.
  * @returns {Promise<void>}
  */
-async function addPersonalRecipes(recipe_details) {
+async function addPersonalRecipes(recipe_details, username) {
     try {
-      console.log('Inserting recipe into database:', recipe_details); // Add this line
-      await DButils.execQuery(
-        `INSERT INTO personal_recipes (user_id, title, readyInMinutes, image, servings, popularity, vegan, vegetarian, glutenFree, extendedIngredients, instructions)
-        VALUES (
-          '${recipe_details.user_id}',
-          '${recipe_details.title}',
-          '${recipe_details.readyInMinutes}',
-          '${recipe_details.image}',
-          '${recipe_details.servings}',
-          '${recipe_details.popularity}',
-          '${recipe_details.vegan}',
-          '${recipe_details.vegetarian}',
-          '${recipe_details.glutenFree}',
-          '${recipe_details.extendedIngredients}',
-          '${recipe_details.instructions}'
-        )`
-      );
-      console.log('Recipe inserted successfully'); // Add this line
+        const user_id = await DButils.execQuery(`SELECT id
+                                                    FROM users
+                                                    WHERE username = '${username}'`);
+        console.log(user_id[0].id);
+        // Insert the recipe details into the recipes table
+        // Set default values if any field is undefined
+        const title = recipe_details.title || '';
+        const readyInMinutes = recipe_details.readyInMinutes || 0;
+        const image = recipe_details.image ? `'${recipe_details.image}'` : 'NULL';
+        const servings = recipe_details.servings || 0;
+        const popularity = recipe_details.popularity || 0;
+        const vegan = recipe_details.vegan ? 1 : 0;
+        const vegetarian = recipe_details.vegetarian ? 1 : 0;
+        const glutenFree = recipe_details.glutenFree ? 1 : 0;
+        const extendedIngredients = recipe_details.extendedIngredients || '';
+        const instructions = recipe_details.instructions || '';
+
+        // Insert the recipe details into the recipes table
+        await DButils.execQuery(`
+            INSERT INTO recipes (
+                user_id, title, readyInMinutes, image, servings, popularity, vegan, vegetarian, glutenFree, extendedIngredients, instructions
+            ) VALUES (
+                '${user_id[0].id}', '${title}', '${readyInMinutes}', ${image}, ${servings}, ${popularity}, ${vegan},
+                ${vegetarian}, ${glutenFree}, '${extendedIngredients}', '${instructions}'
+            )
+        `);
+
+        // Get the ID of the newly inserted recipe
+        const maxRecipeIdResult = await DButils.execQuery('SELECT MAX(recipe_id) AS max_recipe_id FROM recipes;');
+        const maxRecipeId = maxRecipeIdResult[0].max_recipe_id;
+
+        // Insert the recipe ID and user ID into the mypersonalrecipes table
+        await DButils.execQuery(`
+            INSERT INTO mypersonalrecipes (recipe_id, user_id) VALUES ('${maxRecipeId}', '${user_id[0].id}')
+        `);
     } catch (error) {
-      console.error('Error inserting recipe into database:', error); // Add this line
-      throw error;
+        console.error(error);
+        throw new Error('Failed to add personal recipe');
     }
-  }
+}
 
 
 /**
@@ -291,7 +312,6 @@ async function getUsernameById(user_id) {
         FROM users
         WHERE id = ${user_id}
     `;
-    
     try {
         const result = await DButils.execQuery(query);
         return result.length > 0 ? result[0].username : null;
@@ -301,10 +321,79 @@ async function getUsernameById(user_id) {
     }
 }
 
+/**
+ * Retrieves all favorite recipes for a given user from the database.
+ *
+ * @param {number} username - The ID of the user.
+ * @returns {Promise<Array<Object>>} A promise that resolves to an array of favorite recipes.
+ */
 
+async function getFavoriteRecipes(username) {
+    try {
+        const userResult = await DButils.execQuery(`SELECT id
+                                                    FROM users
+                                                    WHERE username = '${username}'`);
+        if (userResult.length === 0) {
+            throw new Error('User not found');
+        }
+        const id = userResult[0].id;
+
+        const query = `
+            SELECT recipe_id as id
+            FROM favoriterecipes
+            WHERE user_id = ${id}
+        `;
+
+
+        console.log('Executing SQL Query:', query); // Log the SQL query
+        let result = await DButils.execQuery(query);
+        console.log('User ID:', id); // Log the user ID
+        console.log('SQL Query Result:', result); // Log the SQL query result
+
+        return result.map(row => row.id); // Return only the recipe IDs
+    }
+    catch (error) {
+        console.error('Error executing query:', error);
+        throw new Error('Failed to retrieve favorite recipes');
+    }
+}
+
+/**
+ * Adds a recipe to the user's favorites.
+ *
+ * @param {string} username - The ID of the user.
+ * @param {number} recipe_id - The ID of the recipe.
+ * @returns {Promise<void>}
+ */
+async function addRecipeToFavorites(username, recipe_id) {
+    try{
+        const userResult = await DButils.execQuery(`SELECT id FROM users WHERE username = '${username}'`);
+        if (userResult.length === 0) {
+            throw new Error('User not found');
+        }
+        const user_id = userResult[0].id;
+        await DButils.execQuery(`INSERT INTO FavoriteRecipes (user_id, recipe_id) VALUES ('${user_id}', ${recipe_id})`);
+    } catch (error) {
+        console.error('Error adding recipe to favorites:', error);
+        throw new Error('Failed to add recipe to favorites');
+    }
+}
+
+
+async function getRecipeById(recipe_id) {
+    try {
+        const response = await axios.get(`${api_domain}/${recipe_id}/information`, {
+            params: {
+                apiKey: apiKey
+            }
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
 
 exports.markAsFavorite = markAsFavorite;
-exports.getFavoriteRecipes = getFavoriteRecipes;
 exports.addToWatchedRecipes = addToWatchedRecipes;
 exports.getRecentWatchedRecipes = getRecentWatchedRecipes;
 exports.addPersonalRecipes = addPersonalRecipes;
@@ -314,3 +403,6 @@ exports.checkWatchedOrFavorite = checkWatchedOrFavorite;
 exports.getFamilyPreviewRecipes = getFamilyPreviewRecipes;
 exports.getFamilyRecipeFullView = getFamilyRecipeFullView;
 exports.getUsernameById = getUsernameById;
+exports.getFavoriteRecipes = getFavoriteRecipes;
+exports.getRecipeById = getRecipeById;
+exports.addRecipeToFavorites = addRecipeToFavorites;

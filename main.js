@@ -5,7 +5,7 @@ var path = require("path");
 var logger = require("morgan");
 const session = require("client-sessions");
 const DButils = require("./routes/utils/DButils");
-var cors = require('cors')
+var cors = require("cors");
 
 var app = express();
 app.use(logger("dev")); //logger
@@ -49,17 +49,18 @@ const corsConfig = {
 app.use(cors(corsConfig));
 app.options("*", cors(corsConfig));
 
-var port = process.env.PORT || "3000"; //local=3000 remote=80
+const port = process.env.PORT || 3000; //local=3000 remote=80
 //#endregion
 const user = require("./routes/user");
 const recipes = require("./routes/recipes");
 const auth = require("./routes/auth");
 
 
+
 //#region cookie middleware
 app.use(function (req, res, next) {
   if (req.session && req.session.user_id) {
-    DButils.execQuery("SELECT user_id FROM users")
+    DButils.execQuery("SELECT id FROM users")
       .then((users) => {
         if (users.find((x) => x.user_id === req.session.user_id)) {
           req.user_id = req.session.user_id;
@@ -71,6 +72,12 @@ app.use(function (req, res, next) {
     next();
   }
 });
+
+// app.use((req, res, next) => {
+//     res.set('Cache-Control', 'no-store');
+//     next();
+// });
+
 //#endregion
 
 // ----> For cheking that our server is alive
